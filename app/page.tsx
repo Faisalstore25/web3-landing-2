@@ -1,13 +1,36 @@
 "use client";
 
 import { useState } from "react";
+import { ethers } from "ethers";
 
 export default function Home() {
-  const [account, setAccount] = useState<string | null>(
-    "0x0FC7C4424BB116aD4C6fcAf76bCf754C65524610"
-  );
-  const [balance, setBalance] = useState("0.0000 ETH");
-  const [network, setNetwork] = useState("mainnet");
+  const [account, setAccount] = useState<string | null>(null);
+  const [balance, setBalance] = useState<string>("");
+  const [network, setNetwork] = useState<string>("");
+
+  const connectWallet = async () => {
+    if (!window.ethereum) {
+      alert("MetaMask belum terpasang");
+      return;
+    }
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      const signer = await provider.getSigner();
+
+      const address = await signer.getAddress();
+      const bal = await provider.getBalance(address);
+      const net = await provider.getNetwork();
+
+      setAccount(address);
+      setBalance(ethers.formatEther(bal));
+      setNetwork(net.name);
+    } catch (err) {
+      console.error(err);
+      alert("Gagal connect wallet");
+    }
+  };
 
   const disconnectWallet = () => {
     setAccount(null);
@@ -34,7 +57,8 @@ export default function Home() {
             </p>
 
             <p>
-              <span className="text-zinc-400">Balance:</span> {balance}
+              <span className="text-zinc-400">Balance:</span>{" "}
+              {Number(balance).toFixed(4)} ETH
             </p>
 
             <p>
@@ -49,9 +73,12 @@ export default function Home() {
             </button>
           </div>
         ) : (
-          <p className="text-center text-zinc-500">
-            Wallet not connected
-          </p>
+          <button
+            onClick={connectWallet}
+            className="w-full py-2 rounded-lg bg-green-600 hover:bg-green-700 transition"
+          >
+            Connect Wallet
+          </button>
         )}
       </div>
     </main>
